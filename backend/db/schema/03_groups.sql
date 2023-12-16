@@ -1,0 +1,15 @@
+DROP TABLE IF EXISTS groups CASCADE;
+CREATE TABLE groups (
+  id SERIAL PRIMARY KEY NOT NULL,
+  name VARCHAR(250) NOT NULL,
+  admin_id INTEGER REFERENCES admins(id) ON DELETE CASCADE NOT NULL,
+  status VARCHAR(250) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  selected_movie VARCHAR(250),
+  suggested_movie_1 VARCHAR(250),
+  suggested_movie_2 VARCHAR(250),
+  suggested_movie_3 VARCHAR(250),
+  description VARCHAR(250) NOT NULL,
+  movie_date TIMESTAMP WITH TIME ZONE NOT NULL,
+  venue VARCHAR(250) NOT NULL
+);

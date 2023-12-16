@@ -1,0 +1,5 @@
+INSERT INTO groups (name, admin_id, status, created_at, selected_movie, suggested_movie_1, suggested_movie_2, suggested_movie_3, description, movie_date, venue)
+VALUES ('Lazy Sunday', 1, 'Closed', '2023-11-18 12:01:10', 'Star Wars: Episode V - The Empire Strikes Back', 'Star Wars: Episode V - The Empire Strikes Back', 'Se7en', 'Goodfellas', 'lorem ipsum', '2023-11-29 12:01:10', 'online' ),
+('Long Weekend', 1, 'Voting', '2023-11-18 12:02:10', '', 'Interstellar', 'Interstellar', 'Interstellar', 'lorem ipsum', '2023-12-29 12:01:10', 'online' ),
+('Casual Movie Night', 2, 'Suggestting', '2023-11-18 12:03:10', '', '', '', '', 'lorem ipsum', '2023-12-12 12:01:10', 'online' ),
+('Top 100 Movies', 2, 'Closed', '2023-11-18 12:04:10', 'Interstellar', 'Interstellar', 'Interstellar', 'Interstellar', 'lorem ipsum', '2023-12-20 12:01:10', 'online' );
