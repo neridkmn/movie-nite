@@ -1,4 +1,4 @@
-User Stories
+**User Stories**
 1. As an admin, I want to register, log in to and log out from the app.
 
 2. As an admin, I want to be able to create a group and add members to it.
