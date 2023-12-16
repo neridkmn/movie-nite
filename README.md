@@ -36,8 +36,16 @@ MovieNite has been built with React, Node.js, Express, and PostgreSQL in additio
 
 ## Screenshots
 ### Landing page
+<img width="1680" alt="Screenshot 2023-12-16 at 1 37 32 PM" src="https://github.com/neridkmn/movie-nite/assets/128938408/aefd97cb-c6b6-4caa-a983-35847b9b2b85">
+
 ### Admin dashboard
+<img width="1680" alt="Screenshot 2023-12-16 at 1 38 45 PM" src="https://github.com/neridkmn/movie-nite/assets/128938408/052fcb4f-1552-46fb-9d69-05321d95175e">
+
+<img width="1680" alt="Screenshot 2023-12-16 at 1 37 32 PM" src="https://github.com/neridkmn/movie-nite/assets/128938408/5afe084e-1c5b-4593-91c3-0f1a8e227d4e">
+
 ### App walk-through
+
+
 
 ## Getting Started
 
