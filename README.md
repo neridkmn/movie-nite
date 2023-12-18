@@ -46,6 +46,7 @@ MovieNite has been built with React, Node.js, Express, and PostgreSQL in additio
 
 ### App walk-through
 https://github.com/neridkmn/movie-nite/assets/128938408/82fcd3d1-f200-4042-85ee-50b95cc435da
+![ezgif-3-f2c9f7e0dc](https://github.com/leventbk/movie-nite/assets/43709259/a8a4f70b-b001-4841-a634-e94ca91633a4)
 
 ## Getting Started
 
