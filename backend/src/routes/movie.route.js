@@ -212,7 +212,7 @@ router.post('/suggest', authenticateToken, async (req, res) => {
           text: `Here is your MovieNite link: http://localhost:3000/vote?token=${token}`,
         }
 
-        //expectation handling
+        //exception handling
         transporter.sendMail(mailOptions, function (error, info) {
           if (error) {
             console.log(error)
