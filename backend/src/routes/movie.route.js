@@ -16,38 +16,40 @@ const getMovies = require('../utils/getMovies')
 const authenticateToken = require('../middleware/jwt')
 const ERROR_REASON = require('../utils/errors')
 const OpenAI = require('openai')
-const dotenv = require('dotenv');
+const dotenv = require('dotenv')
 
-dotenv.config();
+// Load environment variables
+dotenv.config()
+// Create a new router
 const router = express.Router()
 
+// Create a new OpenAI instance
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
+// Helper function to generate JWT
 const generateJwt = (data) => {
   const jwtSecretKey = process.env.JWT_SECRET_KEY
   const token = jwt.sign(data, jwtSecretKey)
   return token
 }
 
-// router.get('/', authenticateToken, (req, res) => { res.send("Hello from movie route") });
-
+// Route to post preferred movies
 router.post('/preferred', async (req, res) => {
   const { preferredMovie1, preferredMovie2, preferredMovie3, token } = req.body
   let userId, groupId
 
-  // Decode token
+  // Decode token and send error if token is null
   if (token === null) return res.sendStatus(401)
   jwt.verify(token, process.env.JWT_SECRET_KEY, (err, data) => {
-    console.log(err)
-
     if (err) return res.sendStatus(403)
 
     userId = data.userId
     groupId = data.groupId
   })
 
+  // Check if preferred movies are filled in
   if (!preferredMovie1 || !preferredMovie2 || !preferredMovie3) {
     return res.json({
       success: false,
@@ -59,6 +61,7 @@ router.post('/preferred', async (req, res) => {
   }
 
   try {
+    // Send preferred movies to the database
     const response = await addPreferredMovies({
       userId,
       groupId,
@@ -69,7 +72,6 @@ router.post('/preferred', async (req, res) => {
     if (response) {
       // Check if all group members have submitted their preferred movies
       const preferredMovies = await getPreferredMoviesByGroupId(groupId)
-      console.log(preferredMovies)
 
       let haveAllMembersSubmittedPreferredMovies = true
       for (const entry of preferredMovies) {
@@ -103,24 +105,27 @@ router.post('/preferred', async (req, res) => {
   }
 })
 
+// Route to suggest movies
 router.post('/suggest', authenticateToken, async (req, res) => {
   const { groupId } = req.body
 
+  // Check if group exists
   const group = await getGroupById(groupId)
-
-  console.log(group)
 
   if (!group) {
     return res.status(403).send('This group does not exist')
   }
 
+  // Check if user is the owner of the group
   if (req.admin.adminId !== group.admin_id) {
     return res.status(401).send('You are not the owner of this group')
   }
 
   try {
+    // Get preferred movies from the database
     const preferredMovies = await getPreferredMoviesByGroupId(groupId)
 
+    // Send preferred movies to OpenAI and stringify the response to parse it later. Add response structure to the message content to be able to get the same structure back.
     if (preferredMovies) {
       const completion = await openai.chat.completions.create({
         messages: [
@@ -131,7 +136,7 @@ router.post('/suggest', authenticateToken, async (req, res) => {
           Here is the movies liked by each group member, presented as an array of objects, with each object representing a group member's movie likings. 
           Analyze this data and come up with 3 movie suggestions that the group can enjoy watching together. Here's the array of objects: 
           ${JSON.stringify(preferredMovies)}
-          Please provide exactly 3 movie suggerstions under the title of suggestions.
+          Please provide exactly 3 movie suggestions under the title of suggestions.
           Please provide your response as an array of objects with each object having the following properties: Movie Title.
           Your suggestions should not include the movies that I provided.
           Please provide your answer in the following format:
@@ -154,29 +159,18 @@ router.post('/suggest', authenticateToken, async (req, res) => {
         model: 'gpt-3.5-turbo',
       })
 
-      console.log(completion.choices[0].message.content)
-
+      // Parse the response from OpenAI
       const suggestedMovies = JSON.parse(completion.choices[0].message.content)
 
-      // let suggestionKey = ''
+      // result is the response from the API
+      const movieResult = getMovies(suggestedMovies)
 
-      // if (suggestedMovies.suggestions) {
-      //   suggestionKey = "suggestions";
-      // } else if (suggestedMovies.suggested_movies) {
-      //   suggestionKey = "suggested_movies";
-      // }
-      // console.log(suggestedMovies);
-
-      const movieResult = getMovies(suggestedMovies) // result is the response from the API
-
+      // Get the movie titles from the result
       let suggestedMovieTitles = movieResult.map(
         (movie) => movie['Movie Title']
       )
 
-      if (suggestedMovieTitles[0] === null && suggestedMovieTitles[1] === null && suggestedMovieTitles[2] === null) {
-        suggestedMovieTitles = ["Inception", "Pulp Fiction", "Avatar"]
-      }
-
+      // Send suggested movies to the database
       const suggestedMoviesResponse = await setSuggestedMovies({
         groupId,
         suggestedMovie1: suggestedMovieTitles[0],
@@ -184,6 +178,7 @@ router.post('/suggest', authenticateToken, async (req, res) => {
         suggestedMovie3: suggestedMovieTitles[2],
       })
 
+      // Change status to voting in groups table
       const response = await changeMovieStatus({ status: 'voting', groupId })
 
       // SEND LINK VIA EMAIL
@@ -191,6 +186,7 @@ router.post('/suggest', authenticateToken, async (req, res) => {
       // Get all users
       const users = await getUsersByGroupId(groupId)
 
+      // NodeMailer transporter
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -199,6 +195,7 @@ router.post('/suggest', authenticateToken, async (req, res) => {
         },
       })
 
+      // Send email to all users
       users.forEach((user) => {
         const token = generateJwt({
           email: user.email,
@@ -207,6 +204,7 @@ router.post('/suggest', authenticateToken, async (req, res) => {
           purpose: 'poll',
         })
 
+        // email details for each user
         const mailOptions = {
           from: process.env.MAIL_FROM,
           to: process.env.MAIL_TO,
@@ -214,6 +212,7 @@ router.post('/suggest', authenticateToken, async (req, res) => {
           text: `Here is your MovieNite link: http://localhost:3000/vote?token=${token}`,
         }
 
+        //exception handling
         transporter.sendMail(mailOptions, function (error, info) {
           if (error) {
             console.log(error)
@@ -223,6 +222,7 @@ router.post('/suggest', authenticateToken, async (req, res) => {
         })
       })
 
+      // Send response to the frontend
       if (response) {
         res.json({
           success: true,
@@ -235,7 +235,6 @@ router.post('/suggest', authenticateToken, async (req, res) => {
       }
     }
   } catch (error) {
-    console.log(error)
     res.json({
       success: false,
       error: {
@@ -246,9 +245,11 @@ router.post('/suggest', authenticateToken, async (req, res) => {
   }
 })
 
+// Route to vote for a movie
 router.post('/vote', async (req, res) => {
   const { votedMovie, token } = req.body
 
+  // Check if voted movie is selected
   if (!votedMovie) {
     return res.json({
       success: false,
@@ -259,12 +260,11 @@ router.post('/vote', async (req, res) => {
     })
   }
 
+  // Decode token and send error if token is null
   let userId, groupId
 
   if (token === null) return res.sendStatus(401)
   jwt.verify(token, process.env.JWT_SECRET_KEY, (err, data) => {
-    console.log(err)
-
     if (err) return res.sendStatus(403)
 
     userId = data.userId
@@ -283,6 +283,7 @@ router.post('/vote', async (req, res) => {
       let votedMovies = await getVotedMoviesByGroupId(groupId)
       votedMovies = votedMovies.map((movie) => movie.voted_movie)
 
+      // Check if all group members have voted
       let haveAllMembersVoted = true
       for (const entry of votedMovies) {
         if (entry === null) {
@@ -290,6 +291,7 @@ router.post('/vote', async (req, res) => {
         }
       }
 
+      // If all members have voted, pick a winner
       if (haveAllMembersVoted) {
         // Pick a winner
         // ["Movie A", "Movie B", "Movie A"] => Movie A
@@ -303,13 +305,13 @@ router.post('/vote', async (req, res) => {
         await changeMovieStatus({ status: 'closed', groupId })
       }
 
+      // Send response to the frontend
       res.json({
         success: true,
         response: response,
       })
     }
   } catch (error) {
-    console.log(error)
     res.json({
       success: false,
       error: {
@@ -320,16 +322,16 @@ router.post('/vote', async (req, res) => {
   }
 })
 
+// Route to get suggested movies
 router.post('/suggested-movies', async (req, res) => {
   const { token } = req.body
 
+  // Decode token and send error if token is null
   let groupId
 
   if (token === null) return res.sendStatus(401)
 
   jwt.verify(token, process.env.JWT_SECRET_KEY, (err, data) => {
-    console.log(err)
-
     if (err) return res.sendStatus(403)
 
     groupId = data.groupId
@@ -338,10 +340,10 @@ router.post('/suggested-movies', async (req, res) => {
   // Get suggested movies from group table and send it to the frontend
 
   try {
+    // Get suggested movies from the database
     const group = await getGroupById(groupId)
 
-    console.log(group)
-
+    // Send suggested movies to the frontend
     if (group) {
       res.json({
         success: true,

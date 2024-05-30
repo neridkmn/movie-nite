@@ -65,14 +65,6 @@ const PreferenceForm = () => {
     })
   }
 
-  // Form onSubmit -> POST to /api/movie/preferred
-  // Body {
-  //  preferredMovie1, preferredMovie2, preferredMovie3, groupId, userId
-  // }
-  // If POST request success setFormSubmitted(true);
-  // Show Thank you Message on
-  // Check GroupForm.jsx for Form HTML & AdminDashboard.jsx for Form related functions
-
   return (
     <StyledContainer maxWidth="sm">
       {formSubmitted ? (

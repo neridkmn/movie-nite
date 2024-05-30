@@ -50,7 +50,7 @@ const getGroupsByAdminId = (adminId) => {
 const setSelectedMovie = (movieTitle) => {
   return db
     .query(`UPDATE groups SET selected_movie = $1 RETURNING *`, [movieTitle])
-    .then(data => data.rows[0])
+    .then((data) => data.rows[0])
 }
 
 module.exports = {
@@ -59,5 +59,5 @@ module.exports = {
   updateGroup,
   deleteGroupById,
   getGroupsByAdminId,
-  setSelectedMovie
+  setSelectedMovie,
 }
