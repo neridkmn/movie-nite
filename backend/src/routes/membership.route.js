@@ -1,7 +1,7 @@
 const express = require('express')
 const nodemailer = require('nodemailer')
 const ERROR_REASON = require('../utils/errors')
-const dotenv = require('dotenv');
+const dotenv = require('dotenv')
 
 const {
   getUserByEmail,
@@ -16,20 +16,25 @@ const { getGroupById } = require('../../db/queries/group-api')
 const authenticateToken = require('../middleware/jwt')
 const jwt = require('jsonwebtoken')
 
-dotenv.config();
+// Load environment variables
+dotenv.config()
 
+// Create a new router
 const router = express.Router()
 
+// Generate JWT token
 const generateJwt = (data) => {
   const jwtSecretKey = process.env.JWT_SECRET_KEY
   const token = jwt.sign(data, jwtSecretKey)
   return token
-} 
+}
 
+// Define a route to test the users route
 router.get('/', (req, res) => {
   res.send('Hello from users route')
 })
 
+// Define a route to add a new user to a group
 router.post('/new', authenticateToken, async (req, res) => {
   const { name, email, groupId } = req.body
   const adminId = req.admin.adminId
@@ -56,6 +61,7 @@ router.post('/new', authenticateToken, async (req, res) => {
     // Before adding membership, make sure that admin owns the group
     const group = await getGroupById(groupId)
 
+    // Check if the group exists
     if (group.admin_id !== adminId) {
       return res.status(401).send('You are not the owner of this group')
     }
@@ -66,6 +72,7 @@ router.post('/new', authenticateToken, async (req, res) => {
       groupId,
     })
 
+    // Check if membership already exists
     if (membership) {
       return res.status(404).send('This user already belongs to this group')
     }
@@ -73,8 +80,8 @@ router.post('/new', authenticateToken, async (req, res) => {
     // Create member relationship
     const response = await addMembership({ userId: user.id, groupId })
     if (response) {
-
       // SEND LINK VIA EMAIl
+      // set up email transporter
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -83,25 +90,32 @@ router.post('/new', authenticateToken, async (req, res) => {
         },
       })
 
+      // send email
+      const userToken = generateJwt({
+        email: user.email,
+        userId: user.id,
+        groupId: groupId,
+        purpose: 'poll',
+      })
 
-        const userToken = generateJwt({ email: user.email, userId: user.id, groupId: groupId, purpose: 'poll' });
+      // email options for movie suggestions
+      const mailOptions = {
+        from: process.env.MAIL_FROM,
+        to: process.env.MAIL_TO,
+        subject: 'Three of your favourite movies',
+        text: `Here is your movie nite link: http://localhost:3000/preference?token=${userToken}`,
+      }
 
-        const mailOptions = {
-          from: process.env.MAIL_FROM,
-          to: process.env.MAIL_TO,
-          subject: 'Three of your favourite movies',
-          text: `Here is your movie nite link: http://localhost:3000/preference?token=${userToken}`,
-          // text: `Here is your movie nite link: http://localhost:3000/poll?groupId=${groupId}&userId=${user.id}&mode=voting&movie1=${suggestedMovieTitles[0]}&movie2=${suggestedMovieTitles[1]}&movie3=${suggestedMovieTitles[2]}`,
+      // send email with transporter
+      transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log('Email sent: ' + info.response)
         }
+      })
 
-        transporter.sendMail(mailOptions, function (error, info) {
-          if (error) {
-            console.log(error)
-          } else {
-            console.log('Email sent: ' + info.response)
-          }
-        })
-
+      // Refresh token
       const jwtSecretKey = process.env.JWT_SECRET_KEY
       let data = {
         email: req.admin.email,
@@ -109,8 +123,10 @@ router.post('/new', authenticateToken, async (req, res) => {
         adminId: req.admin.adminId,
       }
 
+      // Generate token
       const token = jwt.sign(data, jwtSecretKey)
 
+      // Send response to frontend
       res.json({
         success: true,
         membership: response,
@@ -128,10 +144,13 @@ router.post('/new', authenticateToken, async (req, res) => {
   }
 })
 
+// Define a route to delete a user from a group
 router.post('/delete', authenticateToken, async (req, res) => {
+  // Get user and group ID from request body
   const { userId, groupId } = req.body
   const { email } = req.admin
 
+  // Check if user or group ID is missing
   if (!userId || !groupId) {
     return res.status(400).json({
       success: false,
@@ -142,9 +161,11 @@ router.post('/delete', authenticateToken, async (req, res) => {
     })
   }
 
+  // Check if admin is trying to delete themself
   const adminAsUser = await getUserByEmail(email)
 
   if (adminAsUser.id === userId) {
+    // Admin cannot delete themself
     return res.status(401).json({
       success: false,
       error: {
@@ -155,26 +176,35 @@ router.post('/delete', authenticateToken, async (req, res) => {
   }
 
   try {
+    // Get membership by user and group ID
     const membership = await getMembershipByUserAndGroupId({ userId, groupId })
 
+    // Check if membership exists
     if (!membership) {
       return res.status(404).send('Membership not found')
     }
 
+    // Get group and user by ID
     const group = await getGroupById(membership.group_id)
 
+    // Check if admin owns the group
     if (req.admin.adminId !== group.admin_id) {
       return res.status(401).send('You are not the owner of this group')
     }
 
+    // Delete membership
     const user = await getUserById(userId)
 
+    // Check if user belongs to the admin
     if (req.admin.adminId !== user.admin_id) {
       return res.status(401).send('This member does not belong to you')
     }
 
+    // Delete membership relationship
     const response = await deleteMembership(membership.id)
 
+    // Check if membership was deleted
+    // If successful, generate a new token
     if (response) {
       const jwtSecretKey = process.env.JWT_SECRET_KEY
       let data = {
@@ -183,8 +213,10 @@ router.post('/delete', authenticateToken, async (req, res) => {
         adminId: req.admin.adminId,
       }
 
+      // Generate token
       const token = jwt.sign(data, jwtSecretKey)
 
+      // Send response to frontend
       res.json({
         success: true,
         token: token,
