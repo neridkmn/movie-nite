@@ -31,11 +31,6 @@ const generateJwt = (data) => {
   return token
 }
 
-// Define a route to test the group route
-router.get('/', (req, res) => {
-  res.send('Hello from group route')
-})
-
 // Define a route to add a new group
 router.post('/new', authenticateToken, async (req, res) => {
   const { name, description, movie_date, venue } = req.body

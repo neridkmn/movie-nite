@@ -12,7 +12,7 @@ const handleVotes = (movies) => {
     }
   })
 
-  // Convert the voteCounts object to an array of objects
+  // Convert the voteCounts object to an array of objects to be able to sort movie counts
   let voteCountArray = [];
 
   // Convert the voteCounts object to an array of objects

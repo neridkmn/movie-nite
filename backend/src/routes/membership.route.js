@@ -29,10 +29,6 @@ const generateJwt = (data) => {
   return token
 }
 
-// Define a route to test the users route
-router.get('/', (req, res) => {
-  res.send('Hello from users route')
-})
 
 // Define a route to add a new user to a group
 router.post('/new', authenticateToken, async (req, res) => {
