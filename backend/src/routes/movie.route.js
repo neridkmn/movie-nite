@@ -40,7 +40,6 @@ router.post('/preferred', async (req, res) => {
   // Decode token
   if (token === null) return res.sendStatus(401)
   jwt.verify(token, process.env.JWT_SECRET_KEY, (err, data) => {
-    console.log(err)
 
     if (err) return res.sendStatus(403)
 
@@ -217,7 +216,6 @@ router.post('/suggest', authenticateToken, async (req, res) => {
       }
     }
   } catch (error) {
-    console.log(error)
     res.json({
       success: false,
       error: {
@@ -245,7 +243,6 @@ router.post('/vote', async (req, res) => {
 
   if (token === null) return res.sendStatus(401)
   jwt.verify(token, process.env.JWT_SECRET_KEY, (err, data) => {
-    console.log(err)
 
     if (err) return res.sendStatus(403)
 
@@ -291,7 +288,6 @@ router.post('/vote', async (req, res) => {
       })
     }
   } catch (error) {
-    console.log(error)
     res.json({
       success: false,
       error: {
@@ -310,7 +306,6 @@ router.post('/suggested-movies', async (req, res) => {
   if (token === null) return res.sendStatus(401)
 
   jwt.verify(token, process.env.JWT_SECRET_KEY, (err, data) => {
-    console.log(err)
 
     if (err) return res.sendStatus(403)
 
@@ -321,8 +316,6 @@ router.post('/suggested-movies', async (req, res) => {
 
   try {
     const group = await getGroupById(groupId)
-
-    console.log(group)
 
     if (group) {
       res.json({

@@ -113,7 +113,6 @@ router.post('/new', authenticateToken, async (req, res) => {
       })
     }
   } catch (error) {
-    console.log(error)
     res.json({
       success: false,
       error: {
@@ -211,7 +210,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
       })
     }
   } catch (error) {
-    console.log(error)
     res.json({
       success: false,
       error: {
