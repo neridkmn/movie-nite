@@ -82,14 +82,6 @@ const VotingForm = () => {
       })
   }
 
-  // Form onSubmit -> POST to /api/movie/vote
-  // Body {
-  //  votedMovie, groupId, userId
-  // }
-  // If POST request success setFormSubmitted(true);
-  // Show Thank you Message
-  // Check GroupForm.jsx for Form HTML & AdminDashboard.jsx for Form related functions
-
   return (
     <StyledContainer maxWidth="sm">
       <Box sx={{ textAlign: 'center' }}>

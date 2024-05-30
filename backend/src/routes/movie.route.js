@@ -68,8 +68,7 @@ router.post('/preferred', async (req, res) => {
     })
     if (response) {
       // Check if all group members have submitted their preferred movies
-      const preferredMovies = await getPreferredMoviesByGroupId(groupId)
-      console.log(preferredMovies)
+      const preferredMovies = await getPreferredMoviesByGroupId(groupId);
 
       let haveAllMembersSubmittedPreferredMovies = true
       for (const entry of preferredMovies) {
@@ -107,8 +106,6 @@ router.post('/suggest', authenticateToken, async (req, res) => {
   const { groupId } = req.body
 
   const group = await getGroupById(groupId)
-
-  console.log(group)
 
   if (!group) {
     return res.status(403).send('This group does not exist')
@@ -154,28 +151,13 @@ router.post('/suggest', authenticateToken, async (req, res) => {
         model: 'gpt-3.5-turbo',
       })
 
-      console.log(completion.choices[0].message.content)
-
-      const suggestedMovies = JSON.parse(completion.choices[0].message.content)
-
-      // let suggestionKey = ''
-
-      // if (suggestedMovies.suggestions) {
-      //   suggestionKey = "suggestions";
-      // } else if (suggestedMovies.suggested_movies) {
-      //   suggestionKey = "suggested_movies";
-      // }
-      // console.log(suggestedMovies);
+      const suggestedMovies = JSON.parse(completion.choices[0].message.content);
 
       const movieResult = getMovies(suggestedMovies) // result is the response from the API
 
       let suggestedMovieTitles = movieResult.map(
         (movie) => movie['Movie Title']
       )
-
-      if (suggestedMovieTitles[0] === null && suggestedMovieTitles[1] === null && suggestedMovieTitles[2] === null) {
-        suggestedMovieTitles = ["Inception", "Pulp Fiction", "Avatar"]
-      }
 
       const suggestedMoviesResponse = await setSuggestedMovies({
         groupId,

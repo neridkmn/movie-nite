@@ -8,10 +8,6 @@ const getMovies = (result) => {
     return result.suggested_movies;
   }
 
-  // if (result_keys.includes('any_other_key') && Array.isArray(result.any_other_key)) {
-  //   return result.any_other_key;
-  // }
-
   return [];
 };
 

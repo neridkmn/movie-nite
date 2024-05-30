@@ -158,8 +158,6 @@ router.post('/delete', authenticateToken, async (req, res) => {
   try {
     const membership = await getMembershipByUserAndGroupId({ userId, groupId })
 
-    console.log('MEMBERSHIP', membership)
-
     if (!membership) {
       return res.status(404).send('Membership not found')
     }

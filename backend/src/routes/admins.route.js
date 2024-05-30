@@ -57,7 +57,7 @@ router.post('/register', async (req, res) => {
       }
 
       const token = jwt.sign(data, jwtSecretKey)
-      console.log('token', token)
+    
       res.json({
         success: true,
         admin: response,
