@@ -109,6 +109,7 @@ router.post('/preferred', async (req, res) => {
 router.post('/suggest', authenticateToken, async (req, res) => {
   const { groupId } = req.body
 
+  ///VALIDATIONS
   // Check if group exists
   const group = await getGroupById(groupId)
 
@@ -162,16 +163,16 @@ router.post('/suggest', authenticateToken, async (req, res) => {
       // Parse the response from OpenAI
       const suggestedMovies = JSON.parse(completion.choices[0].message.content)
 
-      // result is the response from the API
+      // Call the helper function getMovies to get the movie details
       const movieResult = getMovies(suggestedMovies)
 
-      // Get the movie titles from the result
+      // Get the movie titles from the result and put them in an array
       let suggestedMovieTitles = movieResult.map(
         (movie) => movie['Movie Title']
       )
 
       // Send suggested movies to the database
-      const suggestedMoviesResponse = await setSuggestedMovies({
+      await setSuggestedMovies({
         groupId,
         suggestedMovie1: suggestedMovieTitles[0],
         suggestedMovie2: suggestedMovieTitles[1],
@@ -197,7 +198,7 @@ router.post('/suggest', authenticateToken, async (req, res) => {
 
       // Send email to all users
       users.forEach((user) => {
-        const token = generateJwt({
+        const token = generateJwt({ //Unique link for each user
           email: user.email,
           userId: user.id,
           groupId: groupId,
@@ -212,7 +213,7 @@ router.post('/suggest', authenticateToken, async (req, res) => {
           text: `Here is your MovieNite link: http://localhost:3000/vote?token=${token}`,
         }
 
-        //exception handling
+    
         transporter.sendMail(mailOptions, function (error, info) {
           if (error) {
             console.log(error)
@@ -240,6 +241,50 @@ router.post('/suggest', authenticateToken, async (req, res) => {
       error: {
         reason: ERROR_REASON.MOVIE_SUGGESTION_ERROR,
         message: 'Failed to create movie suggestions',
+      },
+    })
+  }
+})
+
+// When users click on the voting link, they will be redirected to the voting page which makes the /suggested-movies
+// request to get the ChatGPT suggested movies from the API and display to users to that they can vote for the movie they want to watch.
+router.post('/suggested-movies', async (req, res) => {
+  const { token } = req.body
+
+  // Decode token and send error if token is null
+  let groupId
+
+  if (token === null) return res.sendStatus(401)
+
+  jwt.verify(token, process.env.JWT_SECRET_KEY, (err, data) => {
+    if (err) return res.sendStatus(403)
+
+    groupId = data.groupId
+  })
+
+  // Get suggested movies from group table and send it to the frontend
+
+  try {
+    // Get suggested movies from the database
+    const group = await getGroupById(groupId)
+
+    // Send suggested movies to the frontend
+    if (group) {
+      res.json({
+        success: true,
+        suggestedMovies: [
+          group.suggested_movie_1,
+          group.suggested_movie_2,
+          group.suggested_movie_3,
+        ],
+      })
+    }
+  } catch (error) {
+    res.json({
+      success: false,
+      error: {
+        reason: ERROR_REASON.GET_SUGGESTED_MOVIES_ERROR,
+        message: 'Failed to get suggested movies from the database',
       },
     })
   }
@@ -293,10 +338,8 @@ router.post('/vote', async (req, res) => {
 
       // If all members have voted, pick a winner
       if (haveAllMembersVoted) {
-        // Pick a winner
-        // ["Movie A", "Movie B", "Movie A"] => Movie A
-        // ["Movie D", "Movie Z"] => Randomly pick one.
-        const winnerMovie = handleVotes(votedMovies)
+     
+        const winnerMovie = handleVotes(votedMovies) // Call handleVotes function to get the winner movie
 
         // Set Selected Movie into group table
         await setSelectedMovie(winnerMovie)
@@ -317,49 +360,6 @@ router.post('/vote', async (req, res) => {
       error: {
         reason: ERROR_REASON.VOTED_MOVIE_ERROR,
         message: 'Failed to send the voted movie to the database',
-      },
-    })
-  }
-})
-
-// Route to get suggested movies
-router.post('/suggested-movies', async (req, res) => {
-  const { token } = req.body
-
-  // Decode token and send error if token is null
-  let groupId
-
-  if (token === null) return res.sendStatus(401)
-
-  jwt.verify(token, process.env.JWT_SECRET_KEY, (err, data) => {
-    if (err) return res.sendStatus(403)
-
-    groupId = data.groupId
-  })
-
-  // Get suggested movies from group table and send it to the frontend
-
-  try {
-    // Get suggested movies from the database
-    const group = await getGroupById(groupId)
-
-    // Send suggested movies to the frontend
-    if (group) {
-      res.json({
-        success: true,
-        suggestedMovies: [
-          group.suggested_movie_1,
-          group.suggested_movie_2,
-          group.suggested_movie_3,
-        ],
-      })
-    }
-  } catch (error) {
-    res.json({
-      success: false,
-      error: {
-        reason: ERROR_REASON.GET_SUGGESTED_MOVIES_ERROR,
-        message: 'Failed to get suggested movies from the database',
       },
     })
   }
